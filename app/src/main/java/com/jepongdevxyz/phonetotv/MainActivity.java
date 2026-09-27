@@ -13,7 +13,9 @@ import androidx.activity.result.*;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.zxing.*;
-import com.google.zxing.common.BitMatrix;\nimport com.journeyapps.barcodescanner.ScanContract;\nimport com.journeyapps.barcodescanner.ScanOptions;
+import com.google.zxing.common.BitMatrix;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
 import java.io.*;
 import java.net.*;
 import java.security.SecureRandom;
@@ -30,7 +32,8 @@ public class MainActivity extends AppCompatActivity {
   Button send,cancel,retry,pick; ImageView qr;
   NsdManager nsd; NsdManager.DiscoveryListener discovery; NsdManager.RegistrationListener registration;
   TransferServer server; Peer selected; volatile TransferJob current; String code;
-  final ActivityResultLauncher<ScanOptions> scanner=registerForActivityResult(new ScanContract(),r->{if(r.getContents()!=null)pairQr(r.getContents());});\n  final ActivityResultLauncher<Intent> picker=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),r->{
+  final ActivityResultLauncher<ScanOptions> scanner=registerForActivityResult(new ScanContract(),r->{if(r.getContents()!=null)pairQr(r.getContents());});
+  final ActivityResultLauncher<Intent> picker=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),r->{
     if(r.getResultCode()!=RESULT_OK||r.getData()==null)return;
     Intent d=r.getData(); files.clear();
     if(d.getClipData()!=null) for(int i=0;i<d.getClipData().getItemCount();i++) files.add(d.getClipData().getItemAt(i).getUri());
@@ -51,7 +54,8 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout pc=new LinearLayout(this);pc.setOrientation(LinearLayout.VERTICAL);pc.setPadding(dp(20),0,0,0);
     pc.addView(text("Receive mode • Pairing code",14));codeText=text("------",32);codeText.setTypeface(null,1);pc.addView(codeText);pair.addView(pc);root.addView(pair);
     status=text("Starting local receiver…",14);root.addView(status);
-    LinearLayout pairingActions=new LinearLayout(this); Button scan=button("Scan QR"); Button enter=button("Enter 6-digit code"); scan.setOnClickListener(v->scanner.launch(new ScanOptions().setPrompt("Scan receiver QR").setBeepEnabled(false))); enter.setOnClickListener(v->promptCode()); pairingActions.addView(scan,new LinearLayout.LayoutParams(0,-2,1));pairingActions.addView(enter,new LinearLayout.LayoutParams(0,-2,1));root.addView(pairingActions);\n    root.addView(text("Nearby devices",20));peerBox=new LinearLayout(this);peerBox.setOrientation(LinearLayout.VERTICAL);root.addView(peerBox);
+    LinearLayout pairingActions=new LinearLayout(this); Button scan=button("Scan QR"); Button enter=button("Enter 6-digit code"); scan.setOnClickListener(v->scanner.launch(new ScanOptions().setPrompt("Scan receiver QR").setBeepEnabled(false))); enter.setOnClickListener(v->promptCode()); pairingActions.addView(scan,new LinearLayout.LayoutParams(0,-2,1));pairingActions.addView(enter,new LinearLayout.LayoutParams(0,-2,1));root.addView(pairingActions);
+    root.addView(text("Nearby devices",20));peerBox=new LinearLayout(this);peerBox.setOrientation(LinearLayout.VERTICAL);root.addView(peerBox);
     pick=button("Choose files");pick.setOnClickListener(v->choose());root.addView(pick);
     fileBox=new LinearLayout(this);fileBox.setOrientation(LinearLayout.VERTICAL);root.addView(fileBox);
     progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(1000);root.addView(progress,new LinearLayout.LayoutParams(-1,dp(12)));
@@ -71,7 +75,9 @@ public class MainActivity extends AppCompatActivity {
   void makeQr(String s){try{BitMatrix m=new MultiFormatWriter().encode(s,BarcodeFormat.QR_CODE,420,420);Bitmap b=Bitmap.createBitmap(420,420,Bitmap.Config.RGB_565);for(int y=0;y<420;y++)for(int x=0;x<420;x++)b.setPixel(x,y,m.get(x,y)?Color.BLACK:Color.WHITE);qr.setImageBitmap(b);}catch(Exception ignored){}}
   void advertise(int port){nsd=(NsdManager)getSystemService(NSD_SERVICE);NsdServiceInfo i=new NsdServiceInfo();i.setServiceName("Send Files-"+Build.MODEL);i.setServiceType(TYPE);i.setPort(port);try{i.setAttribute("code",code);}catch(Exception ignored){}registration=new NsdManager.RegistrationListener(){public void onRegistrationFailed(NsdServiceInfo s,int e){}public void onUnregistrationFailed(NsdServiceInfo s,int e){}public void onServiceRegistered(NsdServiceInfo s){}public void onServiceUnregistered(NsdServiceInfo s){}};try{nsd.registerService(i,NsdManager.PROTOCOL_DNS_SD,registration);}catch(Exception ignored){}}
   void discover(){discovery=new NsdManager.DiscoveryListener(){public void onDiscoveryStarted(String t){}public void onDiscoveryStopped(String t){}public void onStartDiscoveryFailed(String t,int e){}public void onStopDiscoveryFailed(String t,int e){}public void onServiceLost(NsdServiceInfo s){runOnUiThread(()->{peers.removeIf(p->p.name.equals(s.getServiceName()));renderPeers();});}public void onServiceFound(NsdServiceInfo s){if(s.getServiceName().startsWith("Send Files-"))try{nsd.resolveService(s,new NsdManager.ResolveListener(){public void onResolveFailed(NsdServiceInfo x,int e){}public void onServiceResolved(NsdServiceInfo x){String c="";try{byte[] z=x.getAttributes().get("code");if(z!=null)c=new String(z);}catch(Exception ignored){}Peer p=new Peer(x.getServiceName(),x.getHost().getHostAddress(),x.getPort(),c);runOnUiThread(()->{if(peers.stream().noneMatch(q->q.host.equals(p.host)&&q.port==p.port)){peers.add(p);renderPeers();}});}});}catch(Exception ignored){}}};try{nsd.discoverServices(TYPE,NsdManager.PROTOCOL_DNS_SD,discovery);}catch(Exception ignored){}}
-  void promptCode(){final EditText e=new EditText(this);e.setInputType(2);e.setHint("6-digit code");new AlertDialog.Builder(this).setTitle("Pair with nearby device").setView(e).setPositiveButton("Pair",(d,w)->{String x=e.getText().toString().trim();for(Peer p:peers)if(x.equals(p.code)){selected=p;renderPeers();toast("Paired with "+p.name);return;}toast("No nearby device matches that code");}).setNegativeButton("Cancel",null).show();}\n  void pairQr(String raw){try{Uri u=Uri.parse(raw);if(!"jepongfiles".equals(u.getScheme()))throw new Exception();String h=u.getHost();int p=u.getPort();String x=u.getQueryParameter("code");selected=new Peer("QR paired device",h,p,x);if(peers.stream().noneMatch(q->q.host.equals(h)&&q.port==p))peers.add(selected);renderPeers();toast("QR pairing complete");}catch(Exception e){toast("Invalid Send Files QR code");}}\n  void renderPeers(){peerBox.removeAllViews();if(peers.isEmpty()){peerBox.addView(text("Searching on your Wi‑Fi…",14));return;}for(Peer p:peers){Button b=button((p==selected?"✓ ":"")+p.name+"  •  "+p.host);b.setOnClickListener(v->{selected=p;renderPeers();});peerBox.addView(b);}}
+  void promptCode(){final EditText e=new EditText(this);e.setInputType(2);e.setHint("6-digit code");new AlertDialog.Builder(this).setTitle("Pair with nearby device").setView(e).setPositiveButton("Pair",(d,w)->{String x=e.getText().toString().trim();for(Peer p:peers)if(x.equals(p.code)){selected=p;renderPeers();toast("Paired with "+p.name);return;}toast("No nearby device matches that code");}).setNegativeButton("Cancel",null).show();}
+  void pairQr(String raw){try{Uri u=Uri.parse(raw);if(!"jepongfiles".equals(u.getScheme()))throw new Exception();String h=u.getHost();int p=u.getPort();String x=u.getQueryParameter("code");selected=new Peer("QR paired device",h,p,x);if(peers.stream().noneMatch(q->q.host.equals(h)&&q.port==p))peers.add(selected);renderPeers();toast("QR pairing complete");}catch(Exception e){toast("Invalid Send Files QR code");}}
+  void renderPeers(){peerBox.removeAllViews();if(peers.isEmpty()){peerBox.addView(text("Searching on your Wi‑Fi…",14));return;}for(Peer p:peers){Button b=button((p==selected?"✓ ":"")+p.name+"  •  "+p.host);b.setOnClickListener(v->{selected=p;renderPeers();});peerBox.addView(b);}}
   void beginSend(){if(selected==null){toast("Select a nearby device first");return;}if(files.isEmpty()){toast("Choose one or more files first");return;}current=new TransferJob(selected,new ArrayList<>(files));io.execute(current);}
   void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
   class TransferJob implements Runnable{
