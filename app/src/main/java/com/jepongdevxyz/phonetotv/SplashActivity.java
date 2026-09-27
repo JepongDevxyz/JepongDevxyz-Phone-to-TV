@@ -18,6 +18,10 @@ public class SplashActivity extends Activity {
         ImageView splash = new ImageView(this);
         splash.setBackgroundColor(Color.rgb(6,16,29));
         splash.setImageResource(R.drawable.brand_splash);
+        boolean wide = getResources().getConfiguration().screenWidthDp > getResources().getConfiguration().screenHeightDp;
+        // Preserve the entire supplied artwork on phones and TVs. FIT_CENTER prevents cropping
+        // or stretching; the dark background fills any letterbox area on wide TV screens.
+        splash.setAdjustViewBounds(true);
         splash.setScaleType(ImageView.ScaleType.FIT_CENTER);
         splash.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         setContentView(splash);
