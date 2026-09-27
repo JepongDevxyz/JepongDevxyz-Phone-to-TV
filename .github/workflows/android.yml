@@ -41,3 +41,5 @@ jobs:
         with:
           name: Send-Files-to-TV-Source
           path: JepongDevxyz-Phone-to-TV-source.zip
+
+# exact PNG branding verification
