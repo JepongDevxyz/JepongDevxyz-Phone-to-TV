@@ -7,7 +7,7 @@
  <uses-feature android:name="android.software.leanback" android:required="false"/>
  <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
  <application android:theme="@style/Theme.SendFiles" android:label="Send Files to TV" android:allowBackup="true" android:supportsRtl="true" android:usesCleartextTraffic="true" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:banner="@drawable/tv_banner">
-  <activity android:name=".MainActivity" android:screenOrientation="unspecified" android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize" android:exported="true">
+  <activity android:name=".SplashActivity" android:theme="@style/Theme.SendFiles.Splash" android:screenOrientation="unspecified" android:exported="true">
    <intent-filter>
     <action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/>
    </intent-filter>
@@ -15,5 +15,6 @@
     <action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
    </intent-filter>
   </activity>
+  <activity android:name=".MainActivity" android:screenOrientation="unspecified" android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize" android:exported="false"/>
  </application>
 </manifest>
