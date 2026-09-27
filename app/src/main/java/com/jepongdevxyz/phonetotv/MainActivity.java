@@ -8,6 +8,7 @@ import android.net.nsd.*;
 import android.os.*;
 import android.provider.OpenableColumns;
 import android.view.*;
+import android.graphics.drawable.GradientDrawable;
 import android.widget.*;
 import androidx.activity.result.*;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -41,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
     renderFiles();
   });
 
-  @Override public void onCreate(Bundle b){super.onCreate(b); getWindow().setStatusBarColor(Color.rgb(7,17,31)); buildUi(); startReceiver();}
+  @Override public void onCreate(Bundle b){super.onCreate(b); getWindow().setStatusBarColor(Color.rgb(7,17,31)); buildUi(); startReceiver(); new Handler(Looper.getMainLooper()).postDelayed(()->showPoweredToast(),650);}
   TextView text(String s,int sp){TextView v=new TextView(this);v.setText(s);v.setTextColor(Color.rgb(235,245,255));v.setTextSize(sp);v.setLineSpacing(0,1.08f);v.setPadding(0,dp(5),0,dp(5));return v;}
   TextView muted(String s,int sp){TextView v=text(s,sp);v.setTextColor(Color.rgb(145,169,193));return v;}
   Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(Color.WHITE);b.setTextSize(14);b.setAllCaps(false);b.setGravity(Gravity.CENTER);b.setFocusable(true);b.setMinHeight(dp(54));b.setBackgroundResource(com.jepongdevxyz.phonetotv.R.drawable.bg_secondary);b.setPadding(dp(14),0,dp(14),0);return b;}
@@ -74,11 +75,25 @@ public class MainActivity extends AppCompatActivity {
   void makeQr(String s){try{BitMatrix m=new MultiFormatWriter().encode(s,BarcodeFormat.QR_CODE,420,420);Bitmap b=Bitmap.createBitmap(420,420,Bitmap.Config.RGB_565);for(int y=0;y<420;y++)for(int x=0;x<420;x++)b.setPixel(x,y,m.get(x,y)?Color.BLACK:Color.WHITE);qr.setImageBitmap(b);}catch(Exception ignored){}}
   void advertise(int port){nsd=(NsdManager)getSystemService(NSD_SERVICE);NsdServiceInfo i=new NsdServiceInfo();i.setServiceName("Send Files-"+Build.MODEL);i.setServiceType(TYPE);i.setPort(port);try{i.setAttribute("code",code);}catch(Exception ignored){}registration=new NsdManager.RegistrationListener(){public void onRegistrationFailed(NsdServiceInfo s,int e){}public void onUnregistrationFailed(NsdServiceInfo s,int e){}public void onServiceRegistered(NsdServiceInfo s){}public void onServiceUnregistered(NsdServiceInfo s){}};try{nsd.registerService(i,NsdManager.PROTOCOL_DNS_SD,registration);}catch(Exception ignored){}}
   void discover(){discovery=new NsdManager.DiscoveryListener(){public void onDiscoveryStarted(String t){}public void onDiscoveryStopped(String t){}public void onStartDiscoveryFailed(String t,int e){}public void onStopDiscoveryFailed(String t,int e){}public void onServiceLost(NsdServiceInfo s){runOnUiThread(()->{for(Iterator<Peer> it=peers.iterator();it.hasNext();)if(it.next().name.equals(s.getServiceName()))it.remove();renderPeers();});}public void onServiceFound(NsdServiceInfo s){if(s.getServiceName().startsWith("Send Files-"))try{nsd.resolveService(s,new NsdManager.ResolveListener(){public void onResolveFailed(NsdServiceInfo x,int e){}public void onServiceResolved(NsdServiceInfo x){String c="";try{byte[] z=x.getAttributes().get("code");if(z!=null)c=new String(z);}catch(Exception ignored){}Peer p=new Peer(x.getServiceName(),x.getHost().getHostAddress(),x.getPort(),c);runOnUiThread(()->{boolean exists=false;for(Peer q:peers)if(q.host.equals(p.host)&&q.port==p.port){exists=true;break;}if(!exists){peers.add(p);renderPeers();}});}});}catch(Exception ignored){}}};try{nsd.discoverServices(TYPE,NsdManager.PROTOCOL_DNS_SD,discovery);}catch(Exception ignored){}}
-  void promptCode(){final EditText e=new EditText(this);e.setInputType(2);e.setHint("6-digit code");new AlertDialog.Builder(this).setTitle("Pair with nearby device").setView(e).setPositiveButton("Pair",(d,w)->{String x=e.getText().toString().trim();for(Peer p:peers)if(x.equals(p.code)){selected=p;renderPeers();toast("Paired with "+p.name);return;}toast("No nearby device matches that code");}).setNegativeButton("Cancel",null).show();}
+  void promptCode(){
+    final LinearLayout box=new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setPadding(dp(22),dp(8),dp(22),0);
+    TextView hint=muted("Enter the 6-digit code shown on the other device.",13); box.addView(hint);
+    final EditText e=new EditText(this); e.setInputType(2); e.setHint("—   —   —   —   —   —"); e.setTextColor(Color.WHITE); e.setHintTextColor(Color.rgb(115,151,183)); e.setTextSize(22); e.setGravity(Gravity.CENTER); e.setSingleLine(true); e.setPadding(dp(12),dp(10),dp(12),dp(10));
+    GradientDrawable field=new GradientDrawable(); field.setColor(Color.rgb(7,29,49)); field.setCornerRadius(dp(18)); field.setStroke(dp(1),Color.rgb(25,205,255)); e.setBackground(field);
+    LinearLayout.LayoutParams ep=new LinearLayout.LayoutParams(-1,dp(62)); ep.setMargins(0,dp(14),0,0); box.addView(e,ep);
+    AlertDialog dlg=new AlertDialog.Builder(this).setTitle("Pair with nearby device").setView(box).setPositiveButton("Pair",null).setNegativeButton("Cancel",null).create();
+    dlg.setOnShowListener(x->{dlg.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.rgb(32,214,255));dlg.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.rgb(185,207,229));dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{String z=e.getText().toString().trim();for(Peer p:peers)if(z.equals(p.code)){selected=p;renderPeers();toast("Paired with "+p.name);dlg.dismiss();return;}toast("No nearby device matches that code");});});
+    dlg.show();
+  }
   void pairQr(String raw){try{Uri u=Uri.parse(raw);if(!"jepongfiles".equals(u.getScheme()))throw new Exception();String h=u.getHost();int p=u.getPort();String x=u.getQueryParameter("code");selected=new Peer("QR paired device",h,p,x);boolean exists=false;for(Peer q:peers)if(q.host.equals(h)&&q.port==p){exists=true;break;}if(!exists)peers.add(selected);renderPeers();toast("QR pairing complete");}catch(Exception e){toast("Invalid Send Files QR code");}}
   void renderPeers(){peerBox.removeAllViews();if(peers.isEmpty()){peerBox.addView(text("Searching on your Wi‑Fi…",14));return;}for(Peer p:peers){Button b=button((p==selected?"✓ ":"")+p.name+"  •  "+p.host);b.setOnClickListener(v->{selected=p;renderPeers();});peerBox.addView(b);}}
   void beginSend(){if(selected==null){toast("Select a nearby device first");return;}if(files.isEmpty()){toast("Choose one or more files first");return;}current=new TransferJob(selected,new ArrayList<>(files));io.execute(current);}
   void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
+  void showPoweredToast(){
+    Toast t=new Toast(getApplicationContext()); t.setDuration(Toast.LENGTH_LONG); t.setGravity(Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL,0,dp(28));
+    TextView v=new TextView(this); v.setText("✦  Powered by Jepong Devxyz"); v.setTextColor(Color.WHITE); v.setTextSize(14); v.setTypeface(null,Typeface.BOLD); v.setGravity(Gravity.CENTER); v.setPadding(dp(22),dp(12),dp(22),dp(12));
+    GradientDrawable g=new GradientDrawable(); g.setColor(Color.rgb(8,28,48)); g.setCornerRadius(dp(24)); g.setStroke(dp(1),Color.rgb(27,195,255)); v.setBackground(g); t.setView(v); t.show();
+  }
   class TransferJob implements Runnable{
     final Peer peer;final ArrayList<Uri> list;final AtomicBoolean cancel=new AtomicBoolean();TransferJob(Peer p,ArrayList<Uri>l){peer=p;list=l;}
     public void run(){long total=0;for(Uri u:list)total+=Math.max(0,sizeOf(u));long done=0;try{for(Uri u:list){if(cancel.get())throw new InterruptedIOException("Cancelled");String name=nameOf(u);long size=sizeOf(u);long offset=queryOffset(peer,name,size);done+=offset;sendOne(peer,u,name,size,offset,total,done);done+=Math.max(0,size-offset);}ui("Transfer complete",1000);}catch(Exception e){ui("Transfer stopped: "+e.getMessage(),progress.getProgress());}}
