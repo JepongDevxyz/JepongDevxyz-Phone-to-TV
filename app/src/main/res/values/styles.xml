@@ -2,6 +2,7 @@
  <style name="Theme.SendFiles" parent="Theme.MaterialComponents.DayNight.NoActionBar">
   <item name="android:fontFamily">sans</item><item name="android:windowActionModeOverlay">true</item>
   <item name="android:navigationBarColor">#07111F</item><item name="android:statusBarColor">#07111F</item>
-  <item name="android:windowLightStatusBar">false</item>
+  <item name="android:windowLightStatusBar">false</item><item name="android:windowBackground">@drawable/splash_screen</item>
+  <item name="colorAccent">#20B8FF</item>
  </style>
 </resources>
