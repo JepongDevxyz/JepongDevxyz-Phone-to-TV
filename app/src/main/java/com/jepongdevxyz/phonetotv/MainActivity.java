@@ -47,12 +47,12 @@ public class MainActivity extends AppCompatActivity {
   int dp(int x){return (int)(x*getResources().getDisplayMetrics().density+.5f);}
   void buildUi(){
     ScrollView sc=new ScrollView(this); root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(24),dp(20),dp(24),dp(40));root.setBackgroundColor(Color.rgb(7,17,31));sc.addView(root);setContentView(sc);
-    TextView title=text("Send Files to TV",30);title.setTypeface(null,1);root.addView(title);
+    TextView title=text("Send Files to TV",30);title.setTypeface(null,Typeface.BOLD);root.addView(title);
     root.addView(text("Phone ↔ TV  •  Phone ↔ Phone  •  TV ↔ TV",15));
     LinearLayout pair=new LinearLayout(this);pair.setGravity(Gravity.CENTER_VERTICAL);pair.setPadding(0,dp(18),0,dp(12));
     qr=new ImageView(this);pair.addView(qr,new LinearLayout.LayoutParams(dp(150),dp(150)));
     LinearLayout pc=new LinearLayout(this);pc.setOrientation(LinearLayout.VERTICAL);pc.setPadding(dp(20),0,0,0);
-    pc.addView(text("Receive mode • Pairing code",14));codeText=text("------",32);codeText.setTypeface(null,1);pc.addView(codeText);pair.addView(pc);root.addView(pair);
+    pc.addView(text("Receive mode • Pairing code",14));codeText=text("------",32);codeText.setTypeface(null,Typeface.BOLD);pc.addView(codeText);pair.addView(pc);root.addView(pair);
     status=text("Starting local receiver…",14);root.addView(status);
     LinearLayout pairingActions=new LinearLayout(this); Button scan=button("Scan QR"); Button enter=button("Enter 6-digit code"); scan.setOnClickListener(v->scanner.launch(new ScanOptions().setPrompt("Scan receiver QR").setBeepEnabled(false))); enter.setOnClickListener(v->promptCode()); pairingActions.addView(scan,new LinearLayout.LayoutParams(0,-2,1));pairingActions.addView(enter,new LinearLayout.LayoutParams(0,-2,1));root.addView(pairingActions);
     root.addView(text("Nearby devices",20));peerBox=new LinearLayout(this);peerBox.setOrientation(LinearLayout.VERTICAL);root.addView(peerBox);
