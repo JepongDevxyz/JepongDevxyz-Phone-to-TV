@@ -1,7 +1,7 @@
 name: Android Build Verification
 on:
   push:
-    branches: [ main ]
+    branches: [ main, fix/verified-branding-modern-ui ]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -24,7 +24,12 @@ jobs:
       - name: Verify APK
         run: |
           test -f app/build/outputs/apk/debug/app-debug.apk
-          $ANDROID_HOME/build-tools/36.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -20
+          BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk)"
+          echo "$BADGING" | head -30
+          echo "$BADGING" | grep "versionCode='3'"
+          echo "$BADGING" | grep "versionName='1.2.0'"
+          echo "$BADGING" | grep "application-icon"
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -E 'res/.*/ic_launcher|brand_logo|brand_splash'
       - name: Create source ZIP
         run: |
           git archive --format=zip --output=JepongDevxyz-Phone-to-TV-source.zip HEAD
